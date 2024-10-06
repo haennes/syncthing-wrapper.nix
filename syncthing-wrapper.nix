@@ -254,11 +254,8 @@ in with lib; {
                 else
                   lib.attrNames (devices_in_given_group (ungroup dev)))
                 val.devices);
-              path = if (val ? paths) then
-                (if (val.paths ? "${dev_name}") then
-                  val.paths."${dev_name}"
-                else
-                  def_path)
+              path = if ((val ? paths) && (val.paths ? "${dev_name}")) then
+                val.paths."${dev_name}"
               else
                 def_path;
             }) [ "paths" ]) cfg.folders);
