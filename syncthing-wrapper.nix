@@ -4,6 +4,7 @@ with lib.lists;
 with lib.types;
 let
   settingsFormat = pkgs.formats.json { }; # COPIED
+  cfg_s = config.services.syncthing;
   cfg = config.services.syncthing_wrapper;
   dev_name = cfg.dev_name;
   take_last_n = n: l: reverseList (take 2 (reverseList l));
@@ -64,7 +65,7 @@ in with lib; {
                 && (substring 0 1 x == "/" || substring 0 2 x == "~/");
               description = types.str.description + " starting with / or ~/";
             };
-            default = name;
+            default = "${cfg_s.dataDir}/${name}";
             description = lib.mdDoc ''
               The path to the folder which should be shared.
               Only absolute paths (starting with `/`) and paths relative to
