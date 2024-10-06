@@ -247,51 +247,21 @@ in with lib; {
               } else
                 value;
               def_path = config.services.syncthing.dataDir + "/" + name;
-            in removeAttrs (
-              #{
-              #  versioning = cfg.default_versioning;
-              # val seems to be a string
-              #}
-              #//
-              val // {
-                devices = flatten (map (dev:
-                  if isString dev then
-                    lib.attrNames (devices_in_group (ungroup cfg.devices) dev)
-                  else
-                    lib.attrNames (devices_in_given_group (ungroup dev)))
-                  val.devices); # evals incorrectly
-                #path = mkIf (value ? paths)
-                #(mkIf (value.paths ? "${dev_name}") value.paths."${dev_name}");
-                path = if (val ? paths) then
-                  (if (val.paths ? "${dev_name}") then
-                    val.paths."${dev_name}"
-                  else
-                    def_path)
+            in removeAttrs (val // {
+              devices = flatten (map (dev:
+                if isString dev then
+                  lib.attrNames (devices_in_group (ungroup cfg.devices) dev)
                 else
-                  def_path;
-                #path = def_path;
-              }) [ "paths" ]) cfg.folders);
-        ##devices = lib.mapAttrs (name: value: {id = value;}) devices;
-        ##folders =
-        ##lib.filterAttrs (n: v: builtins.elem dev_name v.devices) folders_list;
-        ##folders = ( builtins.listToAttrs (
-        ##    builtins.map (name_devices: {
-        ##        name = name_devices.name;
-        ##        value = {
-        ##	    inherit versioning;
-        ##	    path = config.services.syncthing_wrap.dataDir + "/" + name_devices.name;
-        ##	    # always sync to server
-        ##          devices = builtins.attrNames name_devices.devices;
-        ##          #devices = removeAttrs ( builtins.attrNames name_devices.devices  ) dev_name;
-        ##        };
-        ##    })
-        ##    folders_list
-        ##));
-        options = {
-          urAccepted = -1; # do not send reports
-          relaysEnabled = true;
-        };
-        #
+                  lib.attrNames (devices_in_given_group (ungroup dev)))
+                val.devices);
+              path = if (val ? paths) then
+                (if (val.paths ? "${dev_name}") then
+                  val.paths."${dev_name}"
+                else
+                  def_path)
+              else
+                def_path;
+            }) [ "paths" ]) cfg.folders);
       };
     };
     # Syncthing ports: 8384 for remote access to GUI
@@ -301,11 +271,6 @@ in with lib; {
     networking.firewall.allowedTCPPorts = [ 8384 22000 ];
     networking.firewall.allowedUDPPorts = [ 22000 21027 ];
 
-    #TODO
-    #services.syncthing.extraOptions.gui = {
-    #    user = "username";
-    #    password = "password";
-    #};
   };
 
 }
