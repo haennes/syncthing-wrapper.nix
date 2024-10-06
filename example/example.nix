@@ -58,8 +58,8 @@ in {
       };
     };
     # some values just to make eval happy :)
-    key = ./key;
-    cert = ./cert;
+    key = "/tmp/key";
+    cert = "/tmp/cert";
     # this is how have it in my config, all hosts import a the same module !!
     #key = lib.mkIf (config.services.syncthing.enable)
     #  config.age.secrets."syncthing_key_${config.networking.hostName}".path;
