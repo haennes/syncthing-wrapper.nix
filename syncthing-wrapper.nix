@@ -22,7 +22,6 @@ let
     devices_in_given_group (filter (v: elem name v)
       group_list); # input is ungrouped returns a group list
   all_devices = devices_in_given_group (ungroup cfg.devices);
-  all_devices_but_me = removeAttrs all_devices [ dev_name ]; # {$name.id = $id}
 
   devices_type_folders = anything;
 
