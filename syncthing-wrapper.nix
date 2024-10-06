@@ -169,6 +169,27 @@ in with lib; {
           };
         };
       })) devices_type_folders);
+      apply = old:
+        (mapAttrs (name: value:
+          let
+            val = if isList value then {
+              devices = value;
+              versioning = cfg.default_versioning;
+            } else
+              value;
+            def_path = config.services.syncthing.dataDir + "/" + name;
+          in val // {
+            devices = flatten (map (dev:
+              if isString dev then
+                lib.attrNames (devices_in_group (ungroup cfg.devices) dev)
+              else
+                lib.attrNames (devices_in_given_group (ungroup dev)))
+              val.devices);
+            path = if ((val ? paths) && (val.paths ? "${dev_name}")) then
+              val.paths."${dev_name}"
+            else
+              def_path;
+          }) old);
     };
 
     default_versioning = mkOption {
@@ -238,27 +259,8 @@ in with lib; {
       openDefaultPorts = true;
       settings = {
         devices = all_devices;
-        folders = filterAttrs (n: v: elem dev_name v.devices) (mapAttrs
-          (name: value:
-            let
-              val = if isList value then {
-                devices = value;
-                versioning = cfg.default_versioning;
-              } else
-                value;
-              def_path = config.services.syncthing.dataDir + "/" + name;
-            in removeAttrs (val // {
-              devices = flatten (map (dev:
-                if isString dev then
-                  lib.attrNames (devices_in_group (ungroup cfg.devices) dev)
-                else
-                  lib.attrNames (devices_in_given_group (ungroup dev)))
-                val.devices);
-              path = if ((val ? paths) && (val.paths ? "${dev_name}")) then
-                val.paths."${dev_name}"
-              else
-                def_path;
-            }) [ "paths" ]) cfg.folders);
+        folders = filterAttrs (n: v: elem dev_name v.devices)
+          (mapAttrs (n: v: removeAttrs v [ "paths" ]) cfg.folders);
       };
     };
   };
