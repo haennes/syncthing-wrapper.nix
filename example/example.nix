@@ -41,7 +41,7 @@
           "Notes" = [ (all_pcs // servers) ];
           "Downloads" = [ (all_pcs // servers) ];
           "Studium" = {
-          devices = [ (all_pcs // uni)  ]; 
+          devices = [ (all_pcs // uni)  ];
           paths = rec {
             "mainpc" = "/home/hannses/Documents/Studium/Semester1";
             "thinkpad" = mainpc;
