@@ -26,6 +26,32 @@ let
 
   devices_type_folders = anything;
 
+  DirUsersGroupsBaseType = user_group: user_group_name: {
+    type = nullOr (listOf (types.passwdEntry types.str));
+    description = lib.mdDoc ''
+      the ${user_group}s who owns the directory
+      only takes effect if  ensureDirsExists is enabled
+    '';
+    apply = l:
+      map (x:
+        assert (stringLength x < 32 || abort
+          "${user_group_name} '${x}' is longer than 31 characters which is not allowed!");
+        x) l;
+  };
+  DirUsersBaseType = (DirUsersGroupsBaseType "Users" "Username");
+
+  DirGroupsBaseType = (DirUsersGroupsBaseType "group" "Group name");
+  folderToPathFuncBase = {
+    type = nullOr (functionTo str);
+    default = { folder_name, DirUsers, DirGroups }:
+      "${cfg_s.dataDir}/${folder_name}";
+  };
+
+  def_val_folders = {
+    DirUsers = cfg.DirUsersDefault;
+    DirGroups = cfg.DirGroupsDefault;
+    folderToPathFunc = cfg.folderToPathFuncDefault;
+  };
 in with lib; {
   options.services.syncthing_wrapper = {
     enable = mkEnableOption "syncting_wrapper";
@@ -33,6 +59,11 @@ in with lib; {
       type = types.str;
       default = config.networking.hostName;
     };
+    folderToPathFuncDefault = mkOption folderToPathFuncBase;
+    DirUsersDefault =
+      mkOption (DirUsersBaseType // { default = [ cfg_s.user ]; });
+    DirGroupsDefault =
+      mkOption (DirGroupsBaseType // { default = [ cfg_s.group ]; });
     devices = mkOption {
       #type = types.attrsOf (either
       #(types.attrsOf str) #grouped
@@ -167,17 +198,27 @@ in with lib; {
               Requires running Syncthing as a privileged user, or granting it additional capabilities (e.g. CAP_CHOWN on Linux).
             '';
           };
+          DirUsers =
+            mkOption (DirUsersBaseType // { default = cfg.DirUsersDefault; });
+          DirGroups =
+            mkOption (DirGroupsBaseType // { default = cfg.DirGroupsDefault; });
+          folderToPathFunc = mkOption (folderToPathFuncBase // {
+            default = cfg.folderToPathFuncDefault;
+          });
         };
       })) devices_type_folders);
       apply = old:
         (mapAttrs (name: value:
           let
-            val = if isList value then {
+            val = def_val_folders // (if isList value then {
               devices = value;
               versioning = cfg.default_versioning;
             } else
-              value;
-            def_path = config.services.syncthing.dataDir + "/" + name;
+              value);
+            def_path = val.folderToPathFunc {
+              folder_name = name;
+              inherit (val) DirUsers DirGroups;
+            };
           in val // {
             devices = flatten (map (dev:
               if isString dev then
@@ -259,8 +300,9 @@ in with lib; {
       openDefaultPorts = true;
       settings = {
         devices = all_devices;
-        folders = filterAttrs (n: v: elem dev_name v.devices)
-          (mapAttrs (n: v: removeAttrs v [ "paths" ]) cfg.folders);
+        folders = filterAttrs (n: v: elem dev_name v.devices) (mapAttrs
+          (n: v: removeAttrs v ([ "paths" ] ++ (attrNames def_val_folders)))
+          cfg.folders);
       };
     };
   };

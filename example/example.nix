@@ -1,10 +1,15 @@
-{ ... }:
+{ config, lib, ... }:
 let ids = import ./ids.nix;
 in {
   networking.hostName = "pcA"; # alternatively set dev_name in syncthing_wrapper
   boot.isContainer = true; # Hack to have an easy time building
   services.syncthing_wrapper = rec {
     enable = true;
+    DirUsersDefault = [ "commonuser" ];
+    folderToPathFunc = { folder_name, DirUsers, DirGroups }:
+      "${config.services.syncthing.dataDir}/${
+        lib.lists.head DirUsers
+      }/${folder_name}";
     default_versioning = {
       type = "simple";
       params.keep = "10";
@@ -29,6 +34,7 @@ in {
           pcA = "/home/Family";
           pcB = "/home/Family";
         };
+        DirGroups = [ "family" "syncthing" ];
       };
       Passwords = {
         devices = (all_pcs // all_mobiles // servers);
