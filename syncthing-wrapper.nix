@@ -313,12 +313,12 @@ in with lib; {
         let
           setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
           chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
-          cmd = if v.ensureDirExists == "setfacl" then
-            "${pkgs.acl}/bin/setfacl -R -d -m ${
+          cmd = if v.ensureDirExists == "setfacl" then ''
+            chown ${cfg_s.user} ${v.path}
+            ${pkgs.acl}/bin/setfacl -R -d -m ${
               concatStringsSep ","
               ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
-            } ${v.path}"
-          else
+            } ${v.path}'' else
             let
               user = assert (length v.DirUsers < 2); (head v.DirUsers);
               group = assert (length v.DirGroups < 2); (head v.DirGroups);
