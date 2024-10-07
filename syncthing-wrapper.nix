@@ -314,7 +314,7 @@ in with lib; {
           setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
           chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
           cmd = if v.ensureDirExists == "setfacl" then
-            "setfacl -R -d -m ${
+            "${pkgs.acl}/bin/setfacl -R -d -m ${
               concatStringsSep ","
               ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
             } ${v.path}"
