@@ -4,6 +4,7 @@ in {
   networking.hostName = "pcA"; # alternatively set dev_name in syncthing_wrapper
   boot.isContainer = true; # Hack to have an easy time building
   services.syncthing_wrapper = rec {
+    ensureDirsExistsDefault = "setfacl";
     enable = true;
     DirUsersDefault = [ "commonuser" ];
     folderToPathFunc = { folder_name, DirUsers, DirGroups }:
@@ -34,6 +35,7 @@ in {
           pcA = "/home/Family";
           pcB = "/home/Family";
         };
+        ensureDirExists = null;
         DirGroups = [ "family" "syncthing" ];
       };
       Passwords = {
@@ -42,6 +44,7 @@ in {
           type = "simple";
           params.keep = "100";
         };
+        ensureDirExists = "chown";
       };
       Documents = [ (all_pcs // servers) ];
       subdir = {

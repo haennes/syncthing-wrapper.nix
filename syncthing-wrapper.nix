@@ -26,6 +26,14 @@ let
 
   devices_type_folders = anything;
 
+  ensureDirsExistsBaseType = {
+    type = nullOr (enum [ "chown" "setfacl" ]);
+    description = lib.mdDoc ''
+      generate the dir with appropiate permissions
+      chown: changes once, subsequent writes will be as the syncthing Users
+      setfacl: changes are also made to all files when written
+    '';
+  };
   DirUsersGroupsBaseType = user_group: user_group_name: {
     type = nullOr (listOf (types.passwdEntry types.str));
     description = lib.mdDoc ''
@@ -48,6 +56,7 @@ let
   };
 
   def_val_folders = {
+    ensureDirExists = cfg.ensureDirsExistsDefault;
     DirUsers = cfg.DirUsersDefault;
     DirGroups = cfg.DirGroupsDefault;
     folderToPathFunc = cfg.folderToPathFuncDefault;
@@ -60,6 +69,8 @@ in with lib; {
       default = config.networking.hostName;
     };
     folderToPathFuncDefault = mkOption folderToPathFuncBase;
+    ensureDirsExistsDefault =
+      mkOption (ensureDirsExistsBaseType // { default = null; });
     DirUsersDefault =
       mkOption (DirUsersBaseType // { default = [ cfg_s.user ]; });
     DirGroupsDefault =
@@ -198,6 +209,11 @@ in with lib; {
               Requires running Syncthing as a privileged user, or granting it additional capabilities (e.g. CAP_CHOWN on Linux).
             '';
           };
+
+          ensureDirExists = mkOption (ensureDirsExistsBaseType // {
+            default = cfg.ensureDirsExistsDefault;
+          });
+
           DirUsers =
             mkOption (DirUsersBaseType // { default = cfg.DirUsersDefault; });
           DirGroups =
@@ -292,6 +308,25 @@ in with lib; {
     };
   };
   config = mkIf cfg.enable {
+    system.activationScripts.ensure-syncthing-dir-permissions.text =
+      concatStringsSep "\n" (mapAttrsToList (n: v:
+        let
+          setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
+          chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
+          cmd = if v.ensureDirExists == "setfacl" then
+            "setfacl -R -d -m ${
+              concatStringsSep ","
+              ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
+            } ${v.path}"
+          else
+            let
+              user = assert (length v.DirUsers < 2); (head v.DirUsers);
+              group = assert (length v.DirGroups < 2); (head v.DirGroups);
+            in chown_cmd user group;
+        in ''
+          mkdir -p ${v.path}
+          ${cmd}'')
+        (filterAttrs (_: v: v.ensureDirExists != null) cfg.folders));
     services.syncthing = {
       enable = true;
       # override options are set. Use mkForce to override
