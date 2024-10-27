@@ -327,14 +327,17 @@ in with lib; {
           mkdir -p ${v.path}
           ${cmd}'')
         (filterAttrs (_: v: v.ensureDirExists != null) cfg.folders));
-    services.syncthing = {
+    services.syncthing = let
+      all_shared_to_devices =
+        flatten (mapAttrsToList (n: v: v.devices) cfg_s.settings.folders);
+    in {
       enable = true;
       # override options are set. Use mkForce to override
       overrideDevices = true;
       overrideFolders = true;
       openDefaultPorts = true;
       settings = {
-        devices = all_devices;
+        devices = filterAttrs (n: _: elem n all_shared_to_devices) all_devices;
         folders = filterAttrs (n: v: elem dev_name v.devices) (mapAttrs
           (n: v: removeAttrs v ([ "paths" ] ++ (attrNames def_val_folders)))
           cfg.folders);
