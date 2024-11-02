@@ -326,7 +326,7 @@ in with lib; {
         in ''
           mkdir -p ${v.path}
           ${cmd}'')
-        (filterAttrs (_: v: v.ensureDirExists != null) cfg.folders));
+        (filterAttrs (_: v: v.ensureDirExists != null) cfg_s.settings.folders));
     services.syncthing = let
       all_shared_to_devices =
         flatten (mapAttrsToList (n: v: v.devices) cfg_s.settings.folders);
