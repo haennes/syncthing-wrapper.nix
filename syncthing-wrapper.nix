@@ -313,7 +313,7 @@ in with lib; {
   in mkIf cfg.enable {
     system.activationScripts = {
       ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
-        (concatStringSep "\n" (mapAttrsToList (n: v: ''
+        (concatStringsSep "\n" (mapAttrsToList (n: v: ''
           mkdir -p ${v.path}
           ${pkgs.acl}/bin/setfacl -R -d -m ${
             concatStringsSep "," ((setfacl_mid "u" [ cfg_s.user ])
@@ -335,8 +335,8 @@ in with lib; {
               in chown_cmd user group;
           in ''
             mkdir -p ${v.path}
-            ${cmd}'') (filterAttrs (_: v: v.ensureDirExists != null)
-              cfg_s.settings.folders));
+            ${cmd}'')
+          (filterAttrs (_: v: v.ensureDirExists != null) cfg.folders));
     };
     services.syncthing = let
       all_shared_to_devices =
