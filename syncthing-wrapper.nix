@@ -69,6 +69,8 @@ in with lib; {
       default = config.networking.hostName;
     };
     folderToPathFuncDefault = mkOption folderToPathFuncBase;
+    ensureServiceOwnerShip = mkEnableOption
+      "ensures using setfacl that the service can access all folders and that they exist";
     ensureDirsExistsDefault =
       mkOption (ensureDirsExistsBaseType // { default = null; });
     DirUsersDefault =
@@ -307,26 +309,35 @@ in with lib; {
         });
     };
   };
-  config = mkIf cfg.enable {
-    system.activationScripts.ensure-syncthing-dir-permissions.text =
-      concatStringsSep "\n" (mapAttrsToList (n: v:
-        let
-          setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
-          chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
-          cmd = if v.ensureDirExists == "setfacl" then ''
-            chown ${cfg_s.user} ${v.path}
-            ${pkgs.acl}/bin/setfacl -R -d -m ${
-              concatStringsSep ","
-              ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
-            } ${v.path}'' else
-            let
-              user = assert (length v.DirUsers < 2); (head v.DirUsers);
-              group = assert (length v.DirGroups < 2); (head v.DirGroups);
-            in chown_cmd user group;
-        in ''
+  config = let setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
+  in mkIf cfg.enable {
+    system.activationScripts = {
+      ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
+        (concatStringSep "\n" (mapAttrsToList (n: v: ''
           mkdir -p ${v.path}
-          ${cmd}'')
-        (filterAttrs (_: v: v.ensureDirExists != null) cfg_s.settings.folders));
+          ${pkgs.acl}/bin/setfacl -R -d -m ${
+            concatStringsSep "," ((setfacl_mid "u" [ cfg_s.user ])
+              ++ (setfacl_mid "g" [ cfg_s.group ]))
+          } ${v.path}'') cfg_s.settings.folders));
+      ensure-syncthing-dir-permissions.text = concatStringsSep "\n"
+        (mapAttrsToList (n: v:
+          let
+            chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
+            cmd = if v.ensureDirExists == "setfacl" then ''
+              chown ${cfg_s.user} ${v.path}
+              ${pkgs.acl}/bin/setfacl -R -d -m ${
+                concatStringsSep ","
+                ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
+              } ${v.path}'' else
+              let
+                user = assert (length v.DirUsers < 2); (head v.DirUsers);
+                group = assert (length v.DirGroups < 2); (head v.DirGroups);
+              in chown_cmd user group;
+          in ''
+            mkdir -p ${v.path}
+            ${cmd}'') (filterAttrs (_: v: v.ensureDirExists != null)
+              cfg_s.settings.folders));
+    };
     services.syncthing = let
       all_shared_to_devices =
         flatten (mapAttrsToList (n: v: v.devices) cfg_s.settings.folders);
