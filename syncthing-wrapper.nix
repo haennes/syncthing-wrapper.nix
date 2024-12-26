@@ -309,13 +309,13 @@ in with lib; {
         });
     };
   };
-  config = let setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rw") mid;
+  config = let setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rwX") mid; #X sets the sticky bit afai understand
   in mkIf cfg.enable {
     system.activationScripts = {
       ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
         (concatStringsSep "\n" (mapAttrsToList (n: v: ''
           mkdir -p ${v.path}
-          ${pkgs.acl}/bin/setfacl -R -d -m ${
+          ${pkgs.acl}/bin/setfacl -R -m ${
             concatStringsSep "," ((setfacl_mid "u" [ cfg_s.user ])
               ++ (setfacl_mid "g" [ cfg_s.group ]))
           } ${v.path}'') cfg_s.settings.folders));
@@ -324,8 +324,7 @@ in with lib; {
           let
             chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
             cmd = if v.ensureDirExists == "setfacl" then ''
-              chown ${cfg_s.user} ${v.path}
-              ${pkgs.acl}/bin/setfacl -R -d -m ${
+              ${pkgs.acl}/bin/setfacl -R -m ${
                 concatStringsSep ","
                 ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
               } ${v.path}'' else
@@ -336,7 +335,7 @@ in with lib; {
           in ''
             mkdir -p ${v.path}
             ${cmd}'')
-          (filterAttrs (_: v: v.ensureDirExists != null) cfg.folders));
+          (filterAttrs (n: v: v.ensureDirExists != null && cfg_s.settings.folders ? "${n}") cfg.folders));
     };
     services.syncthing = let
       all_shared_to_devices =
