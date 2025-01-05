@@ -327,11 +327,11 @@ in with lib; {
               ${pkgs.acl}/bin/setfacl -R -m ${
                 concatStringsSep ","
                 ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
-              } ${v.path}'' else
+              } ${v.path}'' else if v.ensureDirExists == "setfacl" then
               let
                 user = assert (length v.DirUsers < 2); (head v.DirUsers);
                 group = assert (length v.DirGroups < 2); (head v.DirGroups);
-              in chown_cmd user group;
+              in chown_cmd user group else "";
           in ''
             mkdir -p ${v.path}
             ${cmd}'')
