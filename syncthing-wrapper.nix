@@ -311,12 +311,12 @@ in with lib; {
   };
   config = let setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rwX") mid; #X sets the sticky bit afai understand
   in mkIf cfg.enable {
-    systemd.tmpfiles.rules = lib.mkIf cfg.ensureServiceOwnerShip (
-      flatten (mapAttrsToList(_: v: [
-        "A+ ${v.path} - - - - user:${cfg_s.user}:rw"
-        "A+ ${v.path} - - - - group:${cfg_s.group}:rw"
-      ]) cfg_s.settings.folders)
-    );
+    #systemd.tmpfiles.rules = lib.mkIf cfg.ensureServiceOwnerShip (
+    #  flatten (mapAttrsToList(_: v: [
+    #    "A+ ${v.path} - - - - user:${cfg_s.user}:rwX"
+    #    "A+ ${v.path} - - - - group:${cfg_s.group}:rwX"
+    #  ]) cfg_s.settings.folders)
+    #);
     #system.activationScripts = {
     #  ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
     #    (concatStringsSep "\n" (mapAttrsToList (n: v: ''
