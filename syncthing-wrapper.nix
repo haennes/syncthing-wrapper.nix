@@ -311,32 +311,38 @@ in with lib; {
   };
   config = let setfacl_mid = prefix: mid: map (x: "${prefix}:${x}:rwX") mid; #X sets the sticky bit afai understand
   in mkIf cfg.enable {
-    system.activationScripts = {
-      ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
-        (concatStringsSep "\n" (mapAttrsToList (n: v: ''
-          mkdir -p ${v.path}
-          ${pkgs.acl}/bin/setfacl -R -m ${
-            concatStringsSep "," ((setfacl_mid "u" [ cfg_s.user ])
-              ++ (setfacl_mid "g" [ cfg_s.group ]))
-          } ${v.path}'') cfg_s.settings.folders));
-      ensure-syncthing-dir-permissions.text = concatStringsSep "\n"
-        (mapAttrsToList (n: v:
-          let
-            chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
-            cmd = if v.ensureDirExists == "setfacl" then ''
-              ${pkgs.acl}/bin/setfacl -R -m ${
-                concatStringsSep ","
-                ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
-              } ${v.path}'' else if v.ensureDirExists == "setfacl" then
-              let
-                user = assert (length v.DirUsers < 2); (head v.DirUsers);
-                group = assert (length v.DirGroups < 2); (head v.DirGroups);
-              in chown_cmd user group else "";
-          in ''
-            mkdir -p ${v.path}
-            ${cmd}'')
-          (filterAttrs (n: v: v.ensureDirExists != null && cfg_s.settings.folders ? "${n}") cfg.folders));
-    };
+    systemd.tmpfiles.rules = lib.mkIf cfg.ensureServiceOwnerShip (
+      flatten (mapAttrsToList(_: v: [
+        "A+ ${v.path} - - - - user:${cfg_s.user}:rw"
+        "A+ ${v.path} - - - - group:${cfg_s.group}:rw"
+      ]) cfg_s.settings.folders)
+    );
+    #system.activationScripts = {
+    #  ensure-syncthing-dir-ownership.text = lib.mkIf cfg.ensureServiceOwnerShip
+    #    (concatStringsSep "\n" (mapAttrsToList (n: v: ''
+    #      mkdir -p ${v.path}
+    #      ${pkgs.acl}/bin/setfacl -R -m ${
+    #        concatStringsSep "," ((setfacl_mid "u" [ cfg_s.user ])
+    #          ++ (setfacl_mid "g" [ cfg_s.group ]))
+    #      } ${v.path}'') cfg_s.settings.folders));
+    #  ensure-syncthing-dir-permissions.text = concatStringsSep "\n"
+    #    (mapAttrsToList (n: v:
+    #      let
+    #        chown_cmd = user: group: "chown -R ${user}:${group} ${v.path}";
+    #        cmd = if v.ensureDirExists == "setfacl" then ''
+    #          ${pkgs.acl}/bin/setfacl -R -m ${
+    #            concatStringsSep ","
+    #            ((setfacl_mid "u" v.DirUsers) ++ (setfacl_mid "g" v.DirGroups))
+    #          } ${v.path}'' else if v.ensureDirExists == "setfacl" then
+    #          let
+    #            user = assert (length v.DirUsers < 2); (head v.DirUsers);
+    #            group = assert (length v.DirGroups < 2); (head v.DirGroups);
+    #          in chown_cmd user group else "";
+    #      in ''
+    #        mkdir -p ${v.path}
+    #        ${cmd}'')
+    #      (filterAttrs (n: v: v.ensureDirExists != null && cfg_s.settings.folders ? "${n}") cfg.folders));
+    #};
     services.syncthing = let
       all_shared_to_devices =
         flatten (mapAttrsToList (n: v: v.devices) cfg_s.settings.folders);
