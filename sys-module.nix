@@ -7,30 +7,18 @@ let
     listToAttrs
     flatten
     attrNames
-    splitString
+    attrByPath
     head
     ;
   cfg = config.services.syncthing-wrapper;
+  cfg_s = config.services.syncthing;
   hostname = config.networking.hostName;
-  folders = filterAttrs() cfg.folders
-
-  rawdevFolders = filterAttrs (
-    n: v: v.devices ? ${hostname} && v.user == null && v.group == null
-  ) cfg.folders;
-  toHostnameUsernamePair = devicename: splitString "-" devicename;
-  toHostname = devicename: head (toHostnameUsernamePair devicename);
-  userFolders = filterAttrs (
-    n: v: (toHostname v.devices) ? ${hostname} && v.user != null && v.group == null
-  ) cfg.folders;
-  groupFolders = filterAttrs (
-    n: v: (toHostname v.devices) ? ${hostname} && v.user == null && v.group != null
-  ) cfg.folders;
-  devFolders = if !cfg.isServer then rawdevFolders else rawdevFolders // userFolders;
+  folders = filterAttrs (n: v: v.devices ? "${hostname}") cfg.folders;
   devices = listToAttrs (
     flatten (
       mapAttrsToList (
         _: folder: mapAttrsToList (name: value: { inherit name value; }) folder.devices
-      ) devFolders
+      ) folders
     )
   );
 in
@@ -42,26 +30,75 @@ in
         folders = mapAttrs (
           n: v:
           {
-            path = v.path.${hostname};
+            path = (v.path.${hostname}).system;
+            id = lib.mkIf (cfg.legacyIDMap ? ${n}) cfg.legacyIDMap.${n};
             devices = attrNames v.devices;
+            versioning = lib.mkIf (v.versioning != null) (
+              let
+                type = head (attrNames v.versioning.type);
+                inheritNotNull = set: name: {
+                  ${name} = lib.mkIf (set ? ${name} && set.${name} != null) set.${name};
+                };
+                inheritNotNullVers = inheritNotNull v.versioning.type.${type};
+              in
+              {
+                inherit type;
+              }
+              // (inheritNotNullVers "fsPath")
+              // (inheritNotNullVers "fsType")
+              // (inheritNotNullVers "cleanupIntervalS")
+              // (
+                let
+                  params = v.versioning.type.${type}.params;
+                in
+                {
+                  params = lib.mkIf (params != null) (
+                    (inheritNotNull params "cleanoutDays")
+                    // (inheritNotNull params "keep")
+                    // (inheritNotNull params "maxAge")
+                    // (inheritNotNull params "command")
+                  );
+                }
+              )
+            );
           }
           // v.freeformSettings
-        ) devFolders;
+        ) folders;
         devices = mapAttrs (
           name: value:
           {
-            id = value."-system";
+            id = value;
           }
-          // (
-            if (cfg.extraDevicesfreeformSettings ? "${name}-system") then
-              cfg.extraDevicesfreeformSettings."${name}-system"
-            else
-              { }
-          )
+          // (attrByPath [ name ] { } cfg.extraDevicesfreeformSettings)
         ) devices;
       };
-      cert = cfg.secrets.certFunction { inherit hostname; };
-      key = cfg.secrets.keyFunction { inherit hostname; };
+      cert = cfg.secrets.certFunction hostname;
+      key = cfg.secrets.keyFunction hostname;
+    };
+
+    bindfs = lib.mkIf (!cfg.isServer) {
+      enable = true;
+      folders = listToAttrs (
+        flatten (
+          mapAttrsToList (
+            _: v:
+            let
+              system_paths = v.path.${hostname};
+              target_paths = removeAttrs system_paths [ "system" ];
+            in
+            mapAttrsToList (username: target_path: {
+              name = target_path;
+              value = {
+                source = system_paths.system;
+                map.userGroup = {
+                  "${cfg_s.user}" = username;
+                };
+              };
+            }) target_paths
+          ) folders
+        )
+      );
+
     };
   };
 }

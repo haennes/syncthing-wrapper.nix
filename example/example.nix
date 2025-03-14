@@ -21,57 +21,44 @@ in
 {
   networking.hostName = "pcA";
   boot.isContainer = true; # Hack to have an easy time building
-  services.syncthing-wrapper = rec {
+  services.syncthing-wrapper = {
     enable = true;
-    enableHM = true;
-    createHM = true;
-    #TODO default_versioning
-    #default_versioning = {
-    #  type = "simple";
-    #  params.keep = "10";
-    #};
+    defaultVersioning.simple.params.keep = 10;
+    pseudoGroups = {
+      "family" = [
+        "a"
+        "b"
+        "c"
+      ];
+    };
     paths = {
       basePath = "/tmp/sync";
       users.defaultUserDir = "/tmp/syncusers";
+      physicalPath = "/tmp/syncthing";
     };
     secrets = {
-      keyFunction =
-        {
-          hostname,
-          user ? null,
-          group ? null,
-        }:
-        ./key; # TODO make more advanced and check if it still works
-      certFunction =
-        {
-          hostname,
-          user ? null,
-          group ? null,
-        }:
-        ./cert; # TODO make more advanced and check if it still works
+      keyFunction = hostname: ./key;
+      certFunction = hostname: ./cert;
+    };
+    legacyIDMap = {
+      "hannses__Documents" = "Documents";
     };
     folders = with devices; {
       Family = {
         devices = all_pcs // servers;
+        users = [ "hannses" ];
       };
       Passwords = {
         devices = (all_pcs // all_mobiles // servers);
+        pseudoGroups = [ "family" ];
         freeformSettings.versioning = {
           type = "simple";
           params.keep = "100";
         };
       };
-      Documents = {
+      hannses__Documents = {
         devices = (all_pcs // servers);
-        user = "hannses";
-      };
-      subdir = {
-        devices = all_pcs // {
-          inherit (all_pcs) pcA;
-        };
-        path.pcA-hannses = "/home/user/Documents/subdir";
-        user = "hannses";
-
+        users = [ "hannses" ];
       };
     };
   };
@@ -85,11 +72,5 @@ in
         relaysEnabled = true;
       };
     };
-    # some values just to make eval happy :)
-    # this is how have it in my config, all hosts import a the same module !!
-    #key = lib.mkIf (config.services.syncthing.enable)
-    #  config.age.secrets."syncthing_key_${config.networking.hostName}".path;
-    #cert = lib.mkIf (config.services.syncthing.enable)
-    #  config.age.secrets."syncthing_cert_${config.networking.hostName}".path;
   };
 }

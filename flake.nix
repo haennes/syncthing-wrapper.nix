@@ -3,16 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    bindfs.url = "github:haennes/bindfs.nix";
   };
 
   outputs =
     {
       nixpkgs,
-      home-manager,
+      bindfs,
       self,
       ...
     }:
@@ -30,7 +27,8 @@
         modules = [
           ./example/example.nix
           self.nixosModules.syncthing-wrapper
-          home-manager.nixosModules.home-manager
+          bindfs.nixosModules.bindfs
+          #home-manager.nixosModules.home-manager
         ];
       };
       formatter = forAllSystems (
