@@ -445,7 +445,7 @@ in
                         value = cfg.paths.pathFunc {
                           inherit folderName folderID hostname;
                           inherit (cfg.paths) basePath;
-                          inherit (cfg.paths.users) defaultUserDir;
+                          defaultUserDir = attrByPath [ "defaultUserDir" ] null cfg.paths.users;
                           userDirFolder = attrByPath [ user folderName ] null cfg.paths.users.userDirFolderMap;
                           inherit user;
                           userDir = attrByPath [ folderName ] null cfg.paths.users.userDirMap;
