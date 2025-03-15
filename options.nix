@@ -22,7 +22,6 @@ let
     isString
     mapAttrs
     ;
-  cfg_s = config.services.syncthing;
   cfg = config.services.syncthing-wrapper;
   hostname = config.networking.hostName;
   mapListToAttrs = f: l: listToAttrs (map f l);

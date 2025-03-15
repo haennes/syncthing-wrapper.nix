@@ -7,7 +7,6 @@ let
     listToAttrs
     flatten
     attrNames
-    attrByPath
     head
     ;
   cfg = config.services.syncthing-wrapper;
