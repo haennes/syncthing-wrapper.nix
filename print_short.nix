@@ -22,7 +22,7 @@
         ) cfg.pcA.config.bindfs.folders;
       syncf = cfg: cfg.pcA.config.services.syncthing.settings.folders;
       syncwf = cfg: cfg.pcA.config.services.syncthing-wrapper.folders;
-      syncd = cfg: cfg.pcA.config.services.syncthing.settings.folders;
+      syncd = cfg: cfg.pcA.config.services.syncthing.settings.devices;
 
     };
 }
