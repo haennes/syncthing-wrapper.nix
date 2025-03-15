@@ -93,5 +93,9 @@ in
       );
 
     };
+
+    boot.kernel.sysctl = lib.mkIf (cfg.fsNotifyWatches != null) {
+      "fs.inotify.max_user_watches" = cfg.fsNotifyWatches;
+    };
   };
 }

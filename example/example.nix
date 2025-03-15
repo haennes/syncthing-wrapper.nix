@@ -89,6 +89,7 @@ in
         #users = [ "hannses" ];
       };
     };
+    fsNotifyWatches = 20480;
   };
 
   services.syncthing = {

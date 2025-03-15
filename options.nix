@@ -34,6 +34,16 @@ let
       second = (concatStringsSep sep (tail sp));
     in
     [ first ] ++ optional (second != "") second;
+
+  nullOrOpt =
+    { type, ... }@inputs:
+    (
+      lib.mkOption {
+        type = lib.types.nullOr type;
+        default = null;
+      }
+      // (lib.removeAttrs inputs [ "type" ])
+    );
 in
 {
   options.services.syncthing-wrapper =
@@ -43,15 +53,6 @@ in
       versioningType =
         default:
         let
-          nullOrOpt =
-            { type, ... }@inputs:
-            (
-              mkOption {
-                type = types.nullOr type;
-                default = null;
-              }
-              // (lib.removeAttrs inputs [ "type" ])
-            );
           fsType = nullOrOpt { type = types.str; };
           fsPath = nullOrOpt { type = types.path; };
           cleanupIntervalS = nullOrOpt { type = types.int; };
@@ -130,6 +131,14 @@ in
         type = types.bool;
         default = elem hostname cfg.servers;
         description = "If this device is a server (do not make bindfs mounts)";
+      };
+      fsNotifyWatches = nullOrOpt {
+        type = types.int;
+        description = ''
+          number of maximal file watches.
+          should exceed the total number of folders being shared,
+          including any child folders
+        '';
       };
       pseudoGroups = mkOption {
         type = types.attrsOf (types.listOf types.str);
