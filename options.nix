@@ -23,6 +23,7 @@ let
     mapAttrs
     ;
   cfg = config.services.syncthing-wrapper;
+  cfg_s = config.services.syncthing;
   hostname = config.networking.hostName;
   mapListToAttrs = f: l: listToAttrs (map f l);
   expandPseudoGroup = group: cfg.pseudoGroups.${group}; # Recursion??
@@ -191,6 +192,7 @@ in
           description = ''
             The path where the actual directories being synced will be created under
           '';
+          default = cfg_s.dataDir;
         };
         basePath = mkOption {
           type = types.path;
