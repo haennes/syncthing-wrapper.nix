@@ -217,6 +217,7 @@ in
               defaultUserDir,
               userDir, # defacto home of the user
               userDirFolder,
+              ...
             }:
             if (userDirFolder != null) then
               userDirFolder
@@ -248,12 +249,24 @@ in
           userDirFolderMap = mkOption {
             type = types.attrsOf (types.attrsOf types.path);
             description = ''
-              maps a specific folder (by name) to a different path
+              maps a specific folder (**by name**) to a different path
             '';
             example = {
               alice.Downloads = "/home/alice/sdaolnwoD";
             };
             default = { };
+          };
+        };
+        system = {
+          systemsDirFolderMap = mkOption {
+            type = types.attrsOf types.path;
+            default = { };
+            description = ''
+              maps a specific folder (**by id**) to a different physical path
+            '';
+            example = {
+              Alice__Downloads = "/path/syncthing/DownloadsAlice";
+            };
           };
         };
       };
@@ -388,7 +401,9 @@ in
                     ${hostname} =
                       {
                         # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
-                        system = "${cfg.paths.physicalPath}/${folderID}";
+                        system = attrByPath [
+                          folderID
+                        ] "${cfg.paths.physicalPath}/${folderID}" cfg.paths.system.systemsDirFolderMap;
                       }
                       // (mapListToAttrs (user: {
                         name = user;

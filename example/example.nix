@@ -62,6 +62,7 @@ in
       basePath = "/tmp/sync";
       users.defaultUserDir = "/tmp/syncusers";
       physicalPath = "/tmp/syncthing";
+      system.systemsDirFolderMap.Passwords = "/syncs/PasswordsCustom";
     };
     secrets = {
       keyFunction = hostname: ./key;
