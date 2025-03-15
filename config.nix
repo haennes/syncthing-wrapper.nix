@@ -8,6 +8,7 @@ let
     flatten
     attrNames
     head
+    remove
     ;
   cfg = config.services.syncthing-wrapper;
   cfg_s = config.services.syncthing;
@@ -31,7 +32,7 @@ in
           {
             path = (v.path.${hostname}).system;
             id = lib.mkIf (cfg.legacyIDMap ? ${n}) cfg.legacyIDMap.${n};
-            devices = attrNames v.devices;
+            devices = remove hostname (attrNames v.devices);
             versioning = lib.mkIf (v.versioning != null) (
               let
                 type = head (attrNames v.versioning.type);
@@ -63,7 +64,7 @@ in
           }
           // v.freeformSettings
         ) folders;
-        inherit devices;
+        devices = removeAttrs devices [ hostname ] ;
       };
       cert = cfg.secrets.certFunction hostname;
       key = cfg.secrets.keyFunction hostname;
