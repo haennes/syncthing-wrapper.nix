@@ -3,7 +3,10 @@ let
   ids = import ./ids.nix;
   devices = rec {
     all_pcs = {
-      pcA = ids.pcA;
+      pcA = {
+        id = ids.pcA;
+        autoAcceptFolders = true;
+      };
       pcB = ids.pcB;
     };
     all_mobiles = {

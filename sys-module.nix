@@ -64,13 +64,7 @@ in
           }
           // v.freeformSettings
         ) folders;
-        devices = mapAttrs (
-          name: value:
-          {
-            id = value;
-          }
-          // (attrByPath [ name ] { } cfg.extraDevicesfreeformSettings)
-        ) devices;
+        inherit devices;
       };
       cert = cfg.secrets.certFunction hostname;
       key = cfg.secrets.keyFunction hostname;

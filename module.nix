@@ -19,6 +19,8 @@ let
     flatten
     map
     assertMsg
+    isString
+    mapAttrs
     ;
   cfg_s = config.services.syncthing;
   cfg = config.services.syncthing-wrapper;
@@ -38,7 +40,7 @@ in
   options.services.syncthing-wrapper =
     let
       inherit (lib) mkEnableOption mkOption types;
-      freefromType = (pkgs.formats.json { }).type;
+      freeformType = (pkgs.formats.json { }).type;
       versioningType =
         default:
         let
@@ -322,10 +324,61 @@ in
                   example = [ "cryptobros" ];
                 };
                 devices = mkOption {
-                  type = types.attrsOf types.str;
+                  type = types.attrsOf (
+                    types.either types.str (
+                      types.submodule (
+                        { name, ... }:
+                        {
+                          inherit freeformType;
+                          options = {
+                            name = mkOption {
+                              type = types.str;
+                              default = name;
+                              description = ''
+                                The name of the device.
+                              '';
+                              #not to self: do not use this in evaluations
+                            };
+
+                            id = mkOption {
+                              type = types.str;
+                              description = ''
+                                The device ID. See <https://docs.syncthing.net/dev/device-ids.html>.
+                              '';
+                            };
+
+                            autoAcceptFolders = mkOption {
+                              type = types.bool;
+                              default = false;
+                              description = ''
+                                Automatically create or share folders that this device advertises at the default path.
+                                See <https://docs.syncthing.net/users/config.html?highlight=autoaccept#config-file-format>.
+                              '';
+                            };
+                          };
+                        }
+                      )
+                    )
+                  );
+                  apply =
+                    def:
+                    mapAttrs (
+                      name: value:
+                      if isString value then
+                        {
+                          id = value;
+                        }
+                      else
+                        value
+                    ) def;
                   example = {
                     "hostname" = "SOME-ID";
                     "hostname3" = "SOME-ID";
+                    "hostcomplicated" = {
+                      id = "SOME-ID";
+                      autoAcceptFolders = true;
+
+                    };
                   };
                 };
                 targetName = mkOption {
@@ -390,7 +443,7 @@ in
                   default = cfg.defaultVersioning;
                 };
                 freeformSettings = mkOption {
-                  type = freefromType;
+                  type = freeformType;
                   default = { };
                   description = ''
                     extra settings to add to the each settings.folders.\$\{name}.system config
@@ -402,16 +455,6 @@ in
             }
           )
         );
-      };
-
-      extraDevicesfreeformSettings = mkOption {
-        type = types.attrsOf freefromType;
-        default = { };
-        description = ''
-          extra settings to add to the each settings.devices.\$\{name} config
-          will be merged with the options generated from this module
-          options set here take precedence
-        '';
       };
 
       defaultVersioning = versioningType null;
