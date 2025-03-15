@@ -12,9 +12,13 @@ let
     tail
     last
     elem
+    unique
     concatStringsSep
     attrByPath
     optional
+    flatten
+    map
+    assertMsg
     ;
   cfg_s = config.services.syncthing;
   cfg = config.services.syncthing-wrapper;
@@ -164,6 +168,21 @@ in
         '';
         default = folderId: last (splitStringOnce "__" folderId);
       };
+      idToOptionalUserName = mkOption {
+        type = types.functionTo (types.nullOr types.str);
+        description = ''
+          the function will recieve the folder id as an input
+          map a folder id: eg Alice__Downloads to a user name, which will be added to users of the folder
+          if this returns null dont add any user
+        '';
+        default = _: null;
+        example =
+          folderId:
+          let
+            v = head (splitStringOnce "__" folderId);
+          in
+          if v == (cfg.idToTargetName folderId) then null else v;
+      };
       paths = {
         physicalPath = mkOption {
           type = types.path;
@@ -266,7 +285,6 @@ in
             { name, ... }:
             let
               cfg_inner = cfg.folders.${name};
-              inherit (lib) flatten map assertMsg;
               folderName = cfg.idToTargetName name;
               folderID = name;
             in
@@ -274,12 +292,18 @@ in
               options = {
                 users = mkOption {
                   type = types.listOf types.str;
-                  default = flatten (map expandPseudoGroup cfg_inner.pseudoGroups);
+                  default =
+                    let
+                      optionalUser = cfg.idToOptionalUserName name;
+                    in
+                    unique (
+                      (flatten (map expandPseudoGroup cfg_inner.pseudoGroups))
+                      ++ optional (optionalUser != null) optionalUser
+                    );
                   apply =
                     x:
-                    assert assertMsg (
-                      x != [ ]
-                    ) "users for folder ${name} is empty, set either the users option or the pseudoGroups option";
+                    assert assertMsg (x != [ ])
+                      "users for folder ${name} is empty, set either the users option or the pseudoGroups option or ensure idToOptionalUserName does not evaluate to null";
                     x;
                   description = ''
                     name of the owner(s) of the directory

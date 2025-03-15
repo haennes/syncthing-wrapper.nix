@@ -32,6 +32,29 @@ in
       ];
     };
     servers = lib.attrNames devices.all_servers;
+    idToOptionalUserName =
+      folderId:
+      let
+        inherit (lib)
+          head
+          tail
+          concatStringsSep
+          optional
+          splitString
+          ;
+        cfg = config.services.syncthing-wrapper;
+
+        splitStringOnce =
+          sep: str:
+          let
+            sp = (splitString sep str);
+            first = head sp;
+            second = (concatStringsSep sep (tail sp));
+          in
+          [ first ] ++ optional (second != "") second;
+        v = head (splitStringOnce "__" folderId);
+      in
+      if v == (cfg.idToTargetName folderId) then null else v;
     paths = {
       basePath = "/tmp/sync";
       users.defaultUserDir = "/tmp/syncusers";
@@ -59,7 +82,7 @@ in
       };
       hannses__Documents = {
         devices = (all_pcs // servers);
-        users = [ "hannses" ];
+        #users = [ "hannses" ];
       };
     };
   };
