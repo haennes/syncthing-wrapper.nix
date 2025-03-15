@@ -11,6 +11,7 @@ let
     head
     tail
     last
+    elem
     concatStringsSep
     attrByPath
     optional
@@ -121,7 +122,18 @@ in
       #https://github.com/ckiee/nixfiles/blob/fad42a1724183f76424f81b9a8a14f5573a1a1d5/modules/services/soju.nix#L32
 
       enable = mkEnableOption "Wether to enable syncthing-wrapper.nix";
-      isServer = mkEnableOption "If this device is a server (do not make bindfs mounts)";
+      servers = mkOption {
+        type = types.listOf (types.str);
+        default = [ ];
+        description = ''
+          list of hostnames for which isServer will be set to true
+        '';
+      };
+      isServer = mkOption {
+        type = types.bool;
+        default = elem hostname cfg.servers;
+        description = "If this device is a server (do not make bindfs mounts)";
+      };
       pseudoGroups = mkOption {
         type = types.attrsOf (types.listOf types.str);
         default = { };

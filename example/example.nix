@@ -31,6 +31,7 @@ in
         "c"
       ];
     };
+    servers = lib.attrNames devices.all_servers;
     paths = {
       basePath = "/tmp/sync";
       users.defaultUserDir = "/tmp/syncusers";
