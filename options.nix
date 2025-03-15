@@ -118,14 +118,6 @@ in
         };
     in
     {
-      #https://github.com/hpfr/system/blob/a108a5ebf3ffcee75565176243936de6fd736142/profiles/system/gui-base.nix#L108
-
-      #https://github.com/ckiee/nixfiles/blob/fad42a1724183f76424f81b9a8a14f5573a1a1d5/modules/bindfs.nix#L6
-
-      #https://discourse.nixos.org/t/how-to-use-bindfs-on-nixos/32205
-
-      #https://github.com/ckiee/nixfiles/blob/fad42a1724183f76424f81b9a8a14f5573a1a1d5/modules/services/soju.nix#L32
-
       enable = mkEnableOption "Wether to enable syncthing-wrapper.nix";
       servers = mkOption {
         type = types.listOf (types.str);
@@ -218,7 +210,6 @@ in
 
           default =
             {
-              hostname,
               basePath,
               user,
               folderName, # here folder label
@@ -392,39 +383,24 @@ in
                 # eg: paths.${hostname}.system
                 path = mkOption {
                   type = types.attrsOf (types.attrsOf types.path);
-                  default =
-                    let
-                      folder = cfg.folders.${name};
-                      #pseudo_groups_users = unique (flatten (map (gn: cfg.pseudoGroups.${gn}) folder.pseudoGroups));
-                      hostname = config.networking.hostName;
-                      inner_users =
-                        #assert (assertMsg (cfg_inner.users != [ ]) "error");
-                        cfg_inner.users;
-                    in
-                    {
-                      ${hostname} =
-                        {
-                          # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
-                          system = "${cfg.paths.physicalPath}/${folderID}";
-                        }
-                        // (mapListToAttrs (user: {
-                          name = user;
-                          value = cfg.paths.pathFunc {
-                            inherit folderName hostname; # TODO pass folderLabel here as well
-                            inherit (cfg.paths) basePath;
-                            inherit (cfg.paths.users) defaultUserDir;
-                            userDirFolder = attrByPath [ user folderName ] null cfg.paths.users.userDirFolderMap;
-                            #inherit (cfg.folders.${folderName}) user;
-                            inherit user;
-                            userDir = attrByPath [ folderName ] null cfg.paths.users.userDirMap;
-                            #userDir =
-                            #  let
-                            #    umap = cfg.paths.users.userDirMap;
-                            #  in
-                            #  if umap ? ${folderName} then umap.${folderName} else null;
-                          };
-                        }) inner_users);
-                    };
+                  default = {
+                    ${hostname} =
+                      {
+                        # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
+                        system = "${cfg.paths.physicalPath}/${folderID}";
+                      }
+                      // (mapListToAttrs (user: {
+                        name = user;
+                        value = cfg.paths.pathFunc {
+                          inherit folderName hostname; # TODO pass folderLabel here as well
+                          inherit (cfg.paths) basePath;
+                          inherit (cfg.paths.users) defaultUserDir;
+                          userDirFolder = attrByPath [ user folderName ] null cfg.paths.users.userDirFolderMap;
+                          inherit user;
+                          userDir = attrByPath [ folderName ] null cfg.paths.users.userDirMap;
+                        };
+                      }) cfg_inner.users);
+                  };
                   description = ''
                     By default you should not need to set this. This is the whole point of this flake :)
                     But you have the option to do so
@@ -459,7 +435,4 @@ in
       defaultVersioning = versioningType null;
     };
 
-  imports = [
-    ./sys-module.nix
-  ];
 }
