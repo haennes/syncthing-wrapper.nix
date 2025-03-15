@@ -269,7 +269,27 @@ in
           };
         };
         system = {
-          systemsDirFolderMap = mkOption {
+          pathFunc = mkOption {
+            type = types.functionTo types.path;
+            default =
+              {
+                folderID,
+                systemDirFolderMapped,
+                physicalPath,
+                ...
+              }:
+              if systemDirFolderMapped == null then "${physicalPath}/${folderID}" else systemDirFolderMapped;
+            example =
+              {
+                folderName,
+                folderID,
+                hostname,
+                physicalPath,
+                systemDirFolderMapped,
+              }:
+              "${physicalPath}/${folderID}/${folderName}";
+          };
+          DirFolderMap = mkOption {
             type = types.attrsOf types.path;
             default = { };
             description = ''
@@ -412,9 +432,13 @@ in
                     ${hostname} =
                       {
                         # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
-                        system = attrByPath [
-                          folderID
-                        ] "${cfg.paths.physicalPath}/${folderID}" cfg.paths.system.systemsDirFolderMap;
+                        system = cfg.paths.system.pathFunc {
+                          inherit folderName folderID hostname;
+                          inherit (cfg.paths) physicalPath;
+                          systemDirFolderMapped = attrByPath [
+                            folderID
+                          ] null cfg.paths.system.DirFolderMap;
+                        };
                       }
                       // (mapListToAttrs (user: {
                         name = user;

@@ -62,7 +62,23 @@ in
       basePath = "/tmp/sync";
       users.defaultUserDir = "/tmp/syncusers";
       physicalPath = "/tmp/syncthing";
-      system.systemsDirFolderMap.Passwords = "/syncs/PasswordsCustom";
+      system = {
+        DirFolderMap.Passwords = "/syncs/PasswordsCustom";
+        pathFunc =
+          {
+            folderName,
+            folderID,
+            hostname,
+            physicalPath,
+            systemDirFolderMapped,
+          }:
+          let
+            cfg = config.services.syncthing-wrapper;
+            optionalUser = cfg.idToOptionalUserName folderID;
+            middle = lib.optionalString (optionalUser != null) "/${optionalUser}";
+          in
+          "${physicalPath}${middle}/${folderName}";
+      };
     };
     secrets = {
       keyFunction = hostname: ./key;
