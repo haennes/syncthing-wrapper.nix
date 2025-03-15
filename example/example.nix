@@ -87,6 +87,7 @@ in
       hannses__Documents = {
         devices = (all_pcs // servers);
         #users = [ "hannses" ];
+        versioning.type.simple.params.keep = 10;
       };
     };
     fsNotifyWatches = 20480;
