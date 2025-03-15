@@ -202,6 +202,7 @@ in
               user,
               pseudoGroup ? null,
               folderName,
+              folderID,
               defaultUserDir,
               userDir,
               userDirFolder,
@@ -392,7 +393,7 @@ in
                       // (mapListToAttrs (user: {
                         name = user;
                         value = cfg.paths.pathFunc {
-                          inherit folderName hostname; # TODO pass folderLabel here as well
+                          inherit folderName folderID hostname;
                           inherit (cfg.paths) basePath;
                           inherit (cfg.paths.users) defaultUserDir;
                           userDirFolder = attrByPath [ user folderName ] null cfg.paths.users.userDirFolderMap;
