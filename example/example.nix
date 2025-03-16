@@ -74,10 +74,12 @@ in
           }:
           let
             cfg = config.services.syncthing-wrapper;
+            cfg_s = config.services.syncthing;
             optionalUser = cfg.idToOptionalUserName folderID;
             middle = lib.optionalString (optionalUser != null) "/${optionalUser}";
+            legacyID = cfg_s.settings.folders.${folderID}.id;
           in
-          "${physicalPath}${middle}/${folderName}";
+          "${physicalPath}${middle}/${legacyID}";
       };
     };
     secrets = {
@@ -85,7 +87,7 @@ in
       certFunction = hostname: ./cert;
     };
     legacyIDMap = {
-      "hannses__Documents" = "Documents";
+      "hannses__Documents" = "DocumentsH";
     };
     folders = with devices; {
       Family = {
