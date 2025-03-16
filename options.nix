@@ -55,13 +55,13 @@ in
         default:
         let
           fsType = nullOrOpt { type = types.str; };
-          fsPath = nullOrOpt { type = types.path; };
-          cleanupIntervalS = nullOrOpt { type = types.int; };
+          fsPath = nullOrOpt { type = types.path;  apply = x: toString x;};
+          cleanupIntervalS = nullOrOpt { type = types.int;  apply = x: toString x;};
           params = {
-            cleanoutDays = nullOrOpt { type = types.int; };
-            keep = nullOrOpt { type = types.int; };
-            maxAge = nullOrOpt { type = types.int; };
-            command = nullOrOpt { type = types.str; };
+            cleanoutDays = nullOrOpt { type = types.int; apply = x: toString x;};
+            keep = nullOrOpt { type = types.int; apply = x: toString x; };
+            maxAge = nullOrOpt { type = types.int;  apply = x: toString x;};
+            command = nullOrOpt { type = types.str;  apply = x: toString x;};
           };
         in
         mkOption {
