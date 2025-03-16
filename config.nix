@@ -64,7 +64,7 @@ in
           }
           // v.freeformSettings
         ) folders;
-        devices = removeAttrs devices [ hostname ] ;
+        devices = removeAttrs devices [ hostname ];
       };
       cert = cfg.secrets.certFunction hostname;
       key = cfg.secrets.keyFunction hostname;
