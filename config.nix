@@ -37,7 +37,7 @@ in
               let
                 type = head (attrNames v.versioning.type);
                 inheritNotNull = set: name: {
-                  ${name} = lib.mkIf (set ? ${name} && set.${name} != null) set.${name};
+                  ${name} = lib.mkIf (set ? ${name} && set.${name} != null) (toString set.${name});
                 };
                 inheritNotNullVers = inheritNotNull v.versioning.type.${type};
               in
