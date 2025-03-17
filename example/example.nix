@@ -59,8 +59,39 @@ in
       in
       if v == (cfg.idToTargetName folderId) then null else v;
     paths = {
-      basePath = "/tmp/sync";
-      users.defaultUserDir = "/tmp/syncusers";
+      basePath = {
+        path = "/tmp/sync";
+        #ensure = {
+        #  DirExists = true;
+        #  owner = {
+        #    owner = true;
+        #    name = "syncthing";
+        #    recursive = false;
+        #  };
+        #  group = {
+        #    group = true;
+        #    name = "syncthingg";
+        #    recursive = false;
+        #  };
+        #};
+      };
+      users.defaultUserDir = {
+        path = "/tmp/syncusers";
+
+        #ensure = {
+        #  DirExists = true;
+        #  owner = {
+        #    owner = true;
+        #    name = "syncthingtoo";
+        #    recursive = false;
+        #  };
+        #  group = {
+        #    group = true;
+        #    name = "syncthingtoog";
+        #    recursive = false;
+        #  };
+        #};
+      };
       physicalPath = "/tmp/syncthing";
       system = {
         DirFolderMap.Passwords = "/syncs/PasswordsCustom";
@@ -109,6 +140,21 @@ in
       };
     };
     fsNotifyWatches = 20480;
+    defaultEnsure = {
+      DirExists = true;
+      owner = {
+        owner = true;
+        recursive = true;
+      };
+      group = {
+        group = true;
+        recursive = true;
+      };
+      permissions = {
+        permissions = "g+rw";
+        recursive = true;
+      };
+    };
   };
 
   services.syncthing = {
