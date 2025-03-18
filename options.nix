@@ -376,6 +376,7 @@ in
             example = {
               alice = "/home/alicia";
             };
+            apply = x: mapAttrs (_: v: pathEnsureApply null description v) x;
           };
           userDirFolderMap = mkOption rec {
             type = types.attrsOf (types.attrsOf (pathEnsureOptType false description));
@@ -386,6 +387,7 @@ in
               alice.Downloads = "/home/alice/sdaolnwoD";
             };
             default = { };
+            apply = x: mapAttrs (_: xi: mapAttrs (_: v: pathEnsureApply null description v) xi) x;
           };
         };
         system = {
@@ -421,6 +423,7 @@ in
             example = {
               Alice__Downloads = "/path/syncthing/DownloadsAlice";
             };
+            apply = x: mapAttrs (_: v: pathEnsureApply null description v) x;
           };
         };
       };
