@@ -346,7 +346,7 @@ in
           defaultUserDir =
             pathEnsureOpt false
               {
-                DirExists = true;
+                DirExists = false;
                 owner = {
                   owner = false;
                   name = "";
