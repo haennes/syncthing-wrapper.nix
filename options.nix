@@ -62,12 +62,17 @@ let
           {
             ${key} = lib.mkEnableOption description;
           }
-          // (if needs_user_group_name then {
-            name = lib.mkOption {
-              type = lib.types.str;
-              description = ''the target group / user'';
-            };
-          } else {})
+          // (
+            if needs_user_group_name then
+              {
+                name = lib.mkOption {
+                  type = lib.types.str;
+                  description = ''the target group / user'';
+                };
+              }
+            else
+              { }
+          )
           // recursiveOption;
       in
       {
@@ -81,20 +86,19 @@ let
           chown the directory to the correct group
         '';
         permissions = {
-          permissions =
-            nullOrOpt {
-              type = lib.types.str;
-              description = ''
-                if not null set permissions using chmod $this_string
-              '';
-            };
+          permissions = nullOrOpt {
+            type = lib.types.str;
+            description = ''
+              if not null set permissions using chmod $this_string
+            '';
+          };
         } // recursiveOption;
 
       };
   };
 
-  pathEnsureOptType = needs_user_group_name:
-    description:
+  pathEnsureOptType =
+    needs_user_group_name: description:
     lib.types.either lib.types.path (
       lib.types.submodule (
         { ... }:
@@ -103,22 +107,30 @@ let
         }
       )
     );
-  pathEnsureApply = custom_ensure_default: description: x:
-        if lib.isAttrs x then
-          x
-        else
-          {
-            path = x;
-            ensure = if custom_ensure_default == null then lib.mapAttrsRecursiveCond (as: !(as ? "_type" && as._type == "option")) (
-            _:  v: v
-            ) cfg.defaultEnsure else custom_ensure_default;
-          };
-  pathEnsureOpt = custom_ensure_default: needs_user_group_name:
+  pathEnsureApply =
+    custom_ensure_default: description: x:
+    if lib.isAttrs x then
+      x
+    else
+      {
+        path = x;
+        ensure =
+          if custom_ensure_default == null then
+            lib.mapAttrsRecursiveCond (as: !(as ? "_type" && as._type == "option")) (_: v: v) cfg.defaultEnsure
+          else
+            custom_ensure_default;
+      };
+  pathEnsureOpt =
+    allow_null: custom_ensure_default: needs_user_group_name:
     { description, ... }@inputs:
-    lib.mkOption {
+    let
       type = pathEnsureOptType needs_user_group_name description;
+    in
+    lib.mkOption {
+      type = if allow_null then lib.types.nullOr type else type;
       apply = pathEnsureApply custom_ensure_default description;
-    } // inputs;
+    }
+    // inputs;
 in
 {
   options.services.syncthing-wrapper =
@@ -261,32 +273,37 @@ in
           if v == (cfg.idToTargetName folderId) then null else v;
       };
       paths = {
-        physicalPath = pathEnsureOpt null false {
+        physicalPath = pathEnsureOpt false null false {
           description = ''
             The path where the actual directories being synced will be created under
           '';
           default = cfg_s.dataDir;
         };
-        basePath = pathEnsureOpt {
-          DirExists = true;
-owner = {
-  owner = false;
-  name = "";
-  recursive = false;
-};
-group = {
-  group = false;
-  name = "";
-  recursive = false;
-};
-permissions = cfg.defaultEnsure.permissions;
+        basePath =
+          pathEnsureOpt true
+            {
+              DirExists = true;
+              owner = {
+                owner = false;
+                name = "";
+                recursive = false;
+              };
+              group = {
+                group = false;
+                name = "";
+                recursive = false;
+              };
+              permissions = cfg.defaultEnsure.permissions;
 
-        } true {
-          description = ''
-            represents to common component of all paths that should be derived by a rule
-            basePath argument to pathFunc
-          '';
-        };
+            }
+            true
+            {
+              description = ''
+                represents to common component of all paths that should be derived by a rule
+                basePath argument to pathFunc
+              '';
+              default = null;
+            };
         pathFunc = mkOption rec {
           type = types.functionTo (pathEnsureOptType false description);
           description = ''
@@ -326,26 +343,30 @@ permissions = cfg.defaultEnsure.permissions;
               "${basePath}/${user}/${folderName}";
         };
         users = {
-          defaultUserDir = pathEnsureOpt {
-          DirExists = true;
-owner = {
-  owner = false;
-  name = "";
-  recursive = false;
-};
-group = {
-  group = false;
-  name = "";
-  recursive = false;
-};
-permissions = cfg.defaultEnsure.permissions;
+          defaultUserDir =
+            pathEnsureOpt false
+              {
+                DirExists = true;
+                owner = {
+                  owner = false;
+                  name = "";
+                  recursive = false;
+                };
+                group = {
+                  group = false;
+                  name = "";
+                  recursive = false;
+                };
+                permissions = cfg.defaultEnsure.permissions;
 
-          } true {
-            description = ''
-              The Base directory for folders that are owned by a user
-            '';
-            example = "/home";
-          };
+              }
+              true
+              {
+                description = ''
+                  The Base directory for folders that are owned by a user
+                '';
+                example = "/home";
+              };
           userDirMap = mkOption rec {
             type = types.attrsOf (pathEnsureOptType false description);
             default = { };
@@ -387,9 +408,9 @@ permissions = cfg.defaultEnsure.permissions;
                 systemDirFolderMapped,
               }:
               "${physicalPath}/${folderID}/${folderName}";
-              description = ''
+            description = ''
               a function that returns a path where the folder is to be physically synced to.
-              '';
+            '';
           };
           DirFolderMap = mkOption rec {
             type = types.attrsOf (pathEnsureOptType false description);
@@ -538,7 +559,8 @@ permissions = cfg.defaultEnsure.permissions;
                           inherit folderName folderID hostname;
                           physicalPath = cfg.paths.physicalPath.path;
                           systemDirFolderMapped = attrByPath [
-                            folderID "path"
+                            folderID
+                            "path"
                           ] null cfg.paths.system.DirFolderMap;
                         };
                       }
@@ -554,7 +576,7 @@ permissions = cfg.defaultEnsure.permissions;
                         };
                       }) cfg_inner.users);
                   };
-                  apply = x: mapAttrs(_: xi: mapAttrs (_: v: pathEnsureApply null description v) xi) x;
+                  apply = x: mapAttrs (_: xi: mapAttrs (_: v: pathEnsureApply null description v) xi) x;
                   description = ''
                     By default you should not need to set this. This is the whole point of this flake :)
                     But you have the option to do so
