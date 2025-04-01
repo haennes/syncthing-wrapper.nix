@@ -12,14 +12,14 @@
       bindfs,
       self,
       ...
-    }:
+    }@inputs:
     let
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" ];
       pkgsForSystem = system: (import nixpkgs { inherit system; });
     in
     {
       nixosModules = rec {
-        syncthing-wrapper = import ./module.nix;
+        syncthing-wrapper = import ./module.nix inputs;
         default = syncthing-wrapper;
       };
       nixosConfigurations.pcA = nixpkgs.lib.nixosSystem {
