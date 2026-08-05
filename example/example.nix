@@ -114,8 +114,8 @@ in
       };
     };
     secrets = {
-      keyFunction = hostname: ./key;
-      certFunction = hostname: ./cert;
+      keyFunction = hostname: ../test/secrets/${hostname}/key.pem;
+      certFunction = hostname: ../test/secrets/${hostname}/cert.pem;
     };
     legacyIDMap = {
       "hannses__Documents" = "DocumentsH";

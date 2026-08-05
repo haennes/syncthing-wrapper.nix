@@ -21,6 +21,11 @@ let
       ) folders
     )
   );
+  # the syncthing module expects real string paths, so the secrets are copied
+  # from their store paths to a runtime location via systemd-tmpfiles
+  secretsDir = "/run/secrets/syncthing/${hostname}";
+  certPath = "${secretsDir}/cert.pem";
+  keyPath = "${secretsDir}/key.pem";
 in
 {
   config = lib.mkIf cfg.enable {
@@ -66,9 +71,15 @@ in
         ) folders;
         devices = removeAttrs devices [ hostname ];
       };
-      cert = cfg.secrets.certFunction hostname;
-      key = cfg.secrets.keyFunction hostname;
+      cert = certPath;
+      key = keyPath;
     };
+
+    systemd.tmpfiles.rules = [
+      "d ${secretsDir} 0700 ${cfg_s.user} ${cfg_s.group} -"
+      "C ${certPath} 0400 ${cfg_s.user} ${cfg_s.group} - ${cfg.secrets.certFunction hostname}"
+      "C ${keyPath} 0400 ${cfg_s.user} ${cfg_s.group} - ${cfg.secrets.keyFunction hostname}"
+    ];
 
     bindfs = lib.mkIf (!cfg.isServer) {
       enable = true;

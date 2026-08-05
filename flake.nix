@@ -27,7 +27,6 @@
         modules = [
           ./example/example.nix
           self.nixosModules.syncthing-wrapper
-          bindfs.nixosModules.bindfs
         ];
       };
       formatter = forAllSystems (
