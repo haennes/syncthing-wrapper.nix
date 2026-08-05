@@ -67,7 +67,7 @@ let
               {
                 name = lib.mkOption {
                   type = lib.types.str;
-                  description = ''the target group / user'';
+                  description = "the target group / user";
                 };
               }
             else
@@ -92,7 +92,8 @@ let
               if not null set permissions using chmod $this_string
             '';
           };
-        } // recursiveOption;
+        }
+        // recursiveOption;
 
       };
   };
@@ -555,29 +556,28 @@ in
                 path = mkOption rec {
                   type = types.attrsOf (types.attrsOf (pathEnsureOptType false description));
                   default = {
-                    ${hostname} =
-                      {
-                        # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
-                        system = cfg.paths.system.pathFunc {
-                          inherit folderName folderID hostname;
-                          physicalPath = cfg.paths.physicalPath.path;
-                          systemDirFolderMapped = attrByPath [
-                            folderID
-                            "path"
-                          ] null cfg.paths.system.DirFolderMap;
-                        };
-                      }
-                      // (mapListToAttrs (user: {
-                        name = user;
-                        value = cfg.paths.pathFunc {
-                          inherit folderName folderID hostname;
-                          basePath = cfg.paths.basePath.path;
-                          defaultUserDir = attrByPath [ "defaultUserDir" "path" ] null cfg.paths.users;
-                          userDirFolder = attrByPath [ user folderName "path" ] null cfg.paths.users.userDirFolderMap;
-                          inherit user;
-                          userDir = attrByPath [ folderName "path" ] null cfg.paths.users.userDirMap;
-                        };
-                      }) cfg_inner.users);
+                    ${hostname} = {
+                      # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
+                      system = cfg.paths.system.pathFunc {
+                        inherit folderName folderID hostname;
+                        physicalPath = cfg.paths.physicalPath.path;
+                        systemDirFolderMapped = attrByPath [
+                          folderID
+                          "path"
+                        ] null cfg.paths.system.DirFolderMap;
+                      };
+                    }
+                    // (mapListToAttrs (user: {
+                      name = user;
+                      value = cfg.paths.pathFunc {
+                        inherit folderName folderID hostname;
+                        basePath = cfg.paths.basePath.path;
+                        defaultUserDir = attrByPath [ "defaultUserDir" "path" ] null cfg.paths.users;
+                        userDirFolder = attrByPath [ user folderName "path" ] null cfg.paths.users.userDirFolderMap;
+                        inherit user;
+                        userDir = attrByPath [ folderName "path" ] null cfg.paths.users.userDirMap;
+                      };
+                    }) cfg_inner.users);
                   };
                   apply = x: mapAttrs (_: xi: mapAttrs (_: v: pathEnsureApply null description v) xi) x;
                   description = ''

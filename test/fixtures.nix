@@ -21,7 +21,12 @@ let
     concatStringsSep
     optional
     ;
-  splitStringOnce = sep: str: let sp = splitString sep str; in [ (head sp) ] ++ optional (sp != [ ]) (concatStringsSep sep (tail sp));
+  splitStringOnce =
+    sep: str:
+    let
+      sp = splitString sep str;
+    in
+    [ (head sp) ] ++ optional (sp != [ ]) (concatStringsSep sep (tail sp));
 
   ids = {
     pcA = "AAAAAAAAA-AAAAAA-AAAAAA-AAAAAA-AAAAAA-AAAAAA-AAAAAA-AAAAAAAAA";
@@ -63,7 +68,8 @@ let
       };
       defaultVersioning.simple.params.keep = 5;
       legacyIDMap."bob__Notes" = "NotesH";
-      idToOptionalUserName = folderId:
+      idToOptionalUserName =
+        folderId:
         let
           v = head (splitStringOnce "__" folderId);
         in

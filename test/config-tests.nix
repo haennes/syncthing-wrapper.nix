@@ -32,10 +32,13 @@ let
   ];
   ensureLines = lib.splitString "\n" cfgEnsure.system.activationScripts.syncthing-wrapper-ensure;
 
-  tmpfileCopies = kind: lib.any (r:
-    lib.hasPrefix "C /run/secrets/syncthing/pcA/${kind}.pem 0400 syncthing syncthing - " r
-    && lib.hasSuffix "${kind}.pem" r
-  ) cfgA.systemd.tmpfiles.rules;
+  tmpfileCopies =
+    kind:
+    lib.any (
+      r:
+      lib.hasPrefix "C /run/secrets/syncthing/pcA/${kind}.pem 0400 syncthing syncthing - " r
+      && lib.hasSuffix "${kind}.pem" r
+    ) cfgA.systemd.tmpfiles.rules;
 in
 [
   {
@@ -121,7 +124,9 @@ in
   }
   {
     name = "pcA: tmpfiles creates the secrets directory";
-    expr = lib.any (r: r == "d /run/secrets/syncthing/pcA 0700 syncthing syncthing -") cfgA.systemd.tmpfiles.rules;
+    expr = lib.any (
+      r: r == "d /run/secrets/syncthing/pcA 0700 syncthing syncthing -"
+    ) cfgA.systemd.tmpfiles.rules;
     expected = true;
   }
   {
