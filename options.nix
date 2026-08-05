@@ -499,6 +499,8 @@ in
                     x:
                     assert assertMsg (x != [ ])
                       "users for folder ${name} is empty, set either the users option or the pseudoGroups option or ensure idToOptionalUserName does not evaluate to null";
+                    assert assertMsg (!(elem "system" x))
+                      "users for folder ${name} must not contain the reserved user name 'system'";
                     x;
                   description = ''
                     name of the owner(s) of the directory

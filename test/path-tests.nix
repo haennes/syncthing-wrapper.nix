@@ -104,4 +104,37 @@ in
       "c"
     ];
   }
+  {
+    name = "a folder must not have a user named system (reserved)";
+    expr = (builtins.tryEval (
+      (harness.evalConfig [
+        (fixtures.mkHost "pcA")
+        {
+          services.syncthing-wrapper.folders.Bad = {
+            devices.pcA = fixtures.ids.pcA;
+            users = [ "system" ];
+          };
+        }
+      ]).services.syncthing-wrapper.folders.Bad.users
+    )).success;
+    expected = false;
+  }
+  {
+    name = "a folder must not get the user system via pseudoGroups";
+    expr = (builtins.tryEval (
+      (harness.evalConfig [
+        (fixtures.mkHost "pcA")
+        {
+          services.syncthing-wrapper = {
+            pseudoGroups.bad = [ "system" ];
+            folders.Bad = {
+              devices.pcA = fixtures.ids.pcA;
+              pseudoGroups = [ "bad" ];
+            };
+          };
+        }
+      ]).services.syncthing-wrapper.folders.Bad.users
+    )).success;
+    expected = false;
+  }
 ]
