@@ -5,6 +5,26 @@ let
   config = harness.evalConfig [ (fixtures.mkHost "pcA") ];
   w = config.services.syncthing-wrapper;
   folderPath = name: user: (w.folders.${name}.path.pcA.${user}).path;
+
+  # nesting: "all" references the "family" group plus the user "c", and "a"
+  # appears both directly and via the nested group
+  configNested = harness.evalConfig [
+    (fixtures.mkHost "pcA")
+    {
+      services.syncthing-wrapper = {
+        pseudoGroups.all = [
+          "family"
+          "a"
+          "c"
+        ];
+        folders.Nested = {
+          devices.pcA = fixtures.ids.pcA;
+          pseudoGroups = [ "all" ];
+        };
+      };
+    }
+  ];
+  wNested = configNested.services.syncthing-wrapper;
 in
 [
   {
@@ -74,5 +94,14 @@ in
     name = "explicit folder users are kept as-is";
     expr = w.folders.Public.users;
     expected = [ "charlie" ];
+  }
+  {
+    name = "folder users are expanded from nested pseudoGroups and deduplicated";
+    expr = wNested.folders.Nested.users;
+    expected = [
+      "a"
+      "b"
+      "c"
+    ];
   }
 ]
