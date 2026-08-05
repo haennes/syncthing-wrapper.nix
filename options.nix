@@ -26,7 +26,28 @@ let
   cfg_s = config.services.syncthing;
   hostname = config.networking.hostName;
   mapListToAttrs = f: l: listToAttrs (map f l);
-  expandPseudoGroup = group: cfg.pseudoGroups.${group}; # Recursion??
+  # Resolve a pseudoGroup to its (possibly nested) list of users. Elements of a
+  # group that are themselves pseudoGroup names are resolved recursively, so
+  # groups can be nested. Anything else is treated as a user name.
+  expandPseudoGroup =
+    group:
+    let
+      go =
+        seen: name:
+        flatten (
+          map (
+            x:
+            if cfg.pseudoGroups ? ${x} then
+              if elem x seen then
+                abort "syncthing-wrapper: cyclic pseudoGroups reference involving '${x}'"
+              else
+                go (seen ++ [ x ]) x
+            else
+              [ x ]
+          ) cfg.pseudoGroups.${name}
+        );
+    in
+    go [ group ] group;
   splitStringOnce =
     sep: str:
     let
@@ -231,10 +252,20 @@ in
       pseudoGroups = mkOption {
         type = types.attrsOf (types.listOf types.str);
         default = { };
+        description = ''
+          Named groups of users that can be referenced from folders.
+          A group can reference other groups by name, so groups can be nested.
+          Elements that are not the name of another pseudoGroup are treated as
+          user names.
+        '';
         example = {
-          "cryptobros" = [
+          cryptobros = [
             "alice"
             "bob"
+          ];
+          everyone = [
+            "cryptobros"
+            "charlie"
           ];
         };
       };
