@@ -42,7 +42,7 @@ pkgs.testers.runNixOSTest {
     # get created.
     boot.isContainer = lib.mkForce false;
     boot.kernelModules = [ "fuse" ];
-    services.fuse.enable = true;
+    programs.fuse.enable = true;
   };
 
   testScript = ''
