@@ -487,6 +487,9 @@ in
               options = {
                 users = mkOption {
                   type = types.listOf types.str;
+                  defaultText = "
+                    (flatten cfg.folders.<name>.pseudoGroups) ++ (<toList> cfg.idToOptionalUserName)
+                  ";
                   default =
                     let
                       optionalUser = cfg.idToOptionalUserName name;
