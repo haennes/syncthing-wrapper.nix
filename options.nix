@@ -588,6 +588,26 @@ in
                 # eg: paths.${hostname}.system
                 path = mkOption rec {
                   type = types.attrsOf (types.attrsOf (pathEnsureOptType false description));
+                  defaultText = "
+                    $\{hostname} = cfg.paths.system.pathFunc {
+                        inherit folderName folderID hostname;
+                        physicalPath = cfg.paths.physicalPath.path;
+                        systemDirFolderMapped = attrByPath [
+                          folderID
+                          \"path\"
+                        ] null cfg.paths.system.DirFolderMap;
+                      } // (mapListToAttrs (user: {
+                      name = user;
+                      value = cfg.paths.pathFunc {
+                        inherit folderName folderID hostname;
+                        basePath = cfg.paths.basePath.path;
+                        defaultUserDir = attrByPath [ \"defaultUserDir\" \"path\" ] null cfg.paths.users;
+                        userDirFolder = attrByPath [ user folderName \"path\" ] null cfg.paths.users.userDirFolderMap;
+                        inherit user;
+                        userDir = attrByPath [ folderName \"path\" ] null cfg.paths.users.userDirMap;
+                      };
+                    }) cfg_inner.users);
+                  ";
                   default = {
                     ${hostname} = {
                       # this is the defacto path where the directory will physically live. all other paths are bind-mounts of this.
