@@ -84,7 +84,7 @@ let
             tabula = ids.tabula;
           };
           pseudoGroups = [ "family" ];
-          versioning.type.simple.params.keep = 10;
+          versioning.simple.params.keep = 10;
         };
         alice__Downloads = {
           devices = {

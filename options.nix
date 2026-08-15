@@ -625,10 +625,7 @@ in
                     };
                   };
                 };
-                versioning = {
-                  type = versioningType cfg.defaultVersioning;
-                  default = cfg.defaultVersioning;
-                };
+                versioning =  versioningType cfg.defaultVersioning;
                 freeformSettings = mkOption {
                   type = freeformType;
                   default = { };

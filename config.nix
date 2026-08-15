@@ -40,11 +40,11 @@ in
             devices = remove hostname (attrNames v.devices);
             versioning = lib.mkIf (v.versioning != null) (
               let
-                type = head (attrNames v.versioning.type);
+                type = head (attrNames v.versioning);
                 inheritNotNull = set: name: {
                   ${name} = lib.mkIf (set ? ${name} && set.${name} != null) (toString set.${name});
                 };
-                inheritNotNullVers = inheritNotNull v.versioning.type.${type};
+                inheritNotNullVers = inheritNotNull v.versioning.${type};
               in
               {
                 inherit type;
@@ -54,7 +54,7 @@ in
               // (inheritNotNullVers "cleanupIntervalS")
               // (
                 let
-                  params = v.versioning.type.${type}.params;
+                  params = v.versioning.${type}.params;
                 in
                 {
                   params = lib.mkIf (params != null) (
