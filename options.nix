@@ -310,6 +310,7 @@ in
             The path where the actual directories being synced will be created under
           '';
           default = cfg_s.dataDir;
+          defaultText = "config.syncthing.dataDir";
         };
         basePath =
           pathEnsureOpt true
