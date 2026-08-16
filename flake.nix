@@ -40,27 +40,25 @@
         system:
         let
           pkgs = (pkgsForSystem system);
+          # Evaluate the unit tests purely; no nix-instantiate inside the
+          # build, which is forbidden by the default build sandbox. Test
+          # failures abort evaluation, failing the check at eval time.
+          unitResult = import ./test/all.nix {
+            inherit nixpkgs bindfs pkgs;
+          };
+          failures = unitResult.failures;
+          failMsg = nixpkgs.lib.concatMapStringsSep "\n" (
+            f:
+            "- ${f.name}\n  expected: ${builtins.toJSON f.expected}\n  got:      ${builtins.toJSON f.result}"
+          ) failures;
         in
         {
-          unit = pkgs.runCommand "syncthing-wrapper-unit-tests" { } ''
-            set -euo pipefail
-            result=$(${pkgs.nix}/bin/nix-instantiate --eval --strict --json -E '
-              let
-                nixpkgs = builtins.storePath ${builtins.toJSON (toString nixpkgs)};
-                bindfs = builtins.storePath ${builtins.toJSON (toString bindfs)};
-                pkgs = import nixpkgs { system = ${builtins.toJSON system}; };
-              in import ./test/all.nix { inherit nixpkgs bindfs pkgs; }
-            ' 2>/dev/null) || {
-              echo "unit test evaluation failed" >&2
-              exit 1
-            }
-            ${pkgs.jq}/bin/jq -e '.allPassed' >/dev/null <<<"$result" || {
-              echo "unit test failures:" >&2
-              ${pkgs.jq}/bin/jq -r '.failures[] | "- " + .name + "\n  expected: " + (.expected | tostring) + "\n  got:      " + (.result | tostring)' <<<"$result" >&2
-              exit 1
-            }
-            touch $out
-          '';
+          unit = pkgs.runCommand "syncthing-wrapper-unit-tests" { } (
+            if failures == [ ] then
+              "touch $out"
+            else
+              abort "unit test failures:\n${failMsg}"
+          );
           vm = import ./test/vm-test.nix {
             inherit nixpkgs bindfs pkgs;
           };

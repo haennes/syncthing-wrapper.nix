@@ -1,9 +1,6 @@
 # Aggregates and runs all unit tests.
 #
-# Usage (from the flake):   import ./test/all.nix { inherit nixpkgs bindfs; }
-# Usage (standalone):       nix-instantiate --eval test/all.nix \
-#                             --argstr nixpkgs /nix/store/...-source \
-#                             --argstr bindfs /nix/store/...-source
+# Usage (from the flake):   import ./test/all.nix { inherit nixpkgs bindfs pkgs; }
 {
   nixpkgs,
   bindfs,

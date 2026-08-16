@@ -32,7 +32,10 @@ in
 pkgs.testers.runNixOSTest {
   name = "syncthing-wrapper";
 
-  nodes.machine = { lib, ... }: {
+  nodes.machine = {
+    lib,
+    ...
+  }: {
     imports = [
       module
       ../example/example.nix
@@ -43,13 +46,22 @@ pkgs.testers.runNixOSTest {
     boot.isContainer = lib.mkForce false;
     boot.kernelModules = [ "fuse" ];
     programs.fuse.enable = true;
+    # the example's dataDir=/tmp is a container build hack; with
+    # PrivateTmp=true the config would be invisible to the config-updater
+    services.syncthing.dataDir = lib.mkForce "/var/lib/syncthing";
+    systemd.tmpfiles.rules = [
+      "d /var/lib/syncthing 0700 syncthing syncthing -"
+    ];
   };
 
   testScript = ''
     expected_id = "${ids.pcA}"
+    config_xml = "/var/lib/syncthing/.config/syncthing/config.xml"
 
     machine.wait_for_unit("syncthing.service")
-    machine.wait_until_succeeds("test -S /run/syncthing/syncthing.sock")
+
+    # syncthing's API is listening
+    machine.wait_until_succeeds("exec 3<>/dev/tcp/127.0.0.1/8384")
 
     # secrets are in place, owned by syncthing and not world readable
     machine.succeed("stat -c '%U %G %a' /run/secrets/syncthing/pcA/cert.pem | grep -qx 'syncthing syncthing 400'")
@@ -57,18 +69,18 @@ pkgs.testers.runNixOSTest {
 
     # syncthing derives its own device id from the provided certificate
     machine.wait_until_succeeds(
-        f"grep -q '<device id=\"{expected_id}\"' /var/lib/syncthing/config.xml"
+        f"grep -q '<device id=\"{expected_id}\"' {config_xml}"
     )
 
     # the wrapper's folders show up in the generated config
-    machine.wait_until_succeeds("grep -q '/syncs/PasswordsCustom' /var/lib/syncthing/config.xml")
-    machine.wait_until_succeeds("grep -q '/tmp/syncthing/hannses/DocumentsH' /var/lib/syncthing/config.xml")
+    machine.wait_until_succeeds(f"grep -q '/syncs/PasswordsCustom' {config_xml}")
+    machine.wait_until_succeeds(f"grep -q '/tmp/syncthing/hannses/DocumentsH' {config_xml}")
 
     # bindfs mounts user paths on top of the physical paths
     machine.wait_for_unit("local-fs.target")
-    machine.succeed("mountpoint -q /tmp/syncthing/a/Passwords")
-    machine.succeed("mountpoint -q /tmp/syncthing/b/Passwords")
-    machine.succeed("mountpoint -q /tmp/syncthing/c/Passwords")
-    machine.succeed("mountpoint -q /tmp/syncthing/hannses/DocumentsH")
+    machine.succeed("mountpoint -q /tmp/syncusers/a/Passwords")
+    machine.succeed("mountpoint -q /tmp/syncusers/b/Passwords")
+    machine.succeed("mountpoint -q /tmp/syncusers/c/Passwords")
+    machine.succeed("mountpoint -q /tmp/syncusers/hannses/Documents")
   '';
 }
