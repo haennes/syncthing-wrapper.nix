@@ -24,6 +24,12 @@ in
 {
   networking.hostName = "pcA";
   boot.isContainer = true; # Hack to have an easy time building
+  users.users = {
+    a = { isNormalUser = true; };
+    b = { isNormalUser = true; };
+    c = { isNormalUser = true; };
+    hannses = { isNormalUser = true; };
+  };
   services.syncthing-wrapper = {
     enable = true;
     defaultVersioning.simple.params.keep = 10;
@@ -103,14 +109,17 @@ in
             physicalPath,
             systemDirFolderMapped,
           }:
-          let
-            cfg = config.services.syncthing-wrapper;
-            cfg_s = config.services.syncthing;
-            optionalUser = cfg.idToOptionalUserName folderID;
-            middle = lib.optionalString (optionalUser != null) "/${optionalUser}";
-            legacyID = cfg_s.settings.folders.${folderID}.id;
-          in
-          "${physicalPath}${middle}/${legacyID}";
+          if systemDirFolderMapped != null then
+            systemDirFolderMapped
+          else
+            let
+              cfg = config.services.syncthing-wrapper;
+              cfg_s = config.services.syncthing;
+              optionalUser = cfg.idToOptionalUserName folderID;
+              middle = lib.optionalString (optionalUser != null) "/${optionalUser}";
+              legacyID = cfg_s.settings.folders.${folderID}.id;
+            in
+            "${physicalPath}${middle}/${legacyID}";
       };
     };
     secrets = {
