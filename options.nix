@@ -593,7 +593,7 @@ in
                 path = mkOption rec {
                   type = types.attrsOf (types.attrsOf (pathEnsureOptType false description));
                   defaultText = "
-                    $\{hostname} = cfg.paths.system.pathFunc {
+                    \${hostname} = cfg.paths.system.pathFunc {
                         inherit folderName folderID hostname;
                         physicalPath = cfg.paths.physicalPath.path;
                         systemDirFolderMapped = attrByPath [
